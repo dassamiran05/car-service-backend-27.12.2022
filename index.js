@@ -6,13 +6,23 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const { application } = require('express');
 const port = process.env.PORT || 5000;
+const bodyParser = require("body-parser");
+const nodemailer = require("nodemailer");
+
+
 
 
 //middle wares
 //Carserviceuser
 //Whfpo7Ldh1CzadJv
+// app.use(bodyParser.uriencoded({extended : true}))
+// app.use(bodyParser.json())
+app.use(express.urlencoded({extended : true}));
+
+
 app.use(cors());
 app.use(express.json());
+
 
 
 
@@ -283,6 +293,32 @@ async function run() {
       const result = await usersCollection.deleteOne(query2);
       res.send(result);
 
+    })
+
+    //api for mail
+    app.post("/send_mail", async(req, res) => {
+      let mail = req.body;
+      const {email, name, subject, phone, description} = mail;
+      console.log(email);
+      let transport = nodemailer.createTransport({
+        host:'smtp.gmail.com',
+        port:587,
+        secure:false,
+        auth:{
+          user : process.env.GMAIL_USER,
+          pass : process.env.GMAIL_PASS
+        }
+      })
+
+      await transport.sendMail({
+        from: email,
+        to: 'dassamiran05@gmail.com',
+        subject: subject,
+        text:`<h1>${subject}</h1>`,
+        html:`<div><p>${description}</p></div>`,
+      })
+
+      console.log("Message sent");
     })
   } finally {
     //   await client.close();
