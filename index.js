@@ -55,6 +55,17 @@ async function run() {
     const productsCollection = client.db("carService").collection("products");
     const usersCollection = client.db("carService").collection("users");
 
+    const  verifyAdmin = async(req, res, next) =>{
+      const decodedEmail = req.decoded.email;
+      const query = {email:decodedEmail};
+      const user = await usersCollection.findOne(query);
+
+      if(user.role !== 'admin'){
+        return res.status(403).send({message: 'Forbidden access'});
+      }
+      next();
+    }
+
     app.get('/services', async (req, res) => {
       const query = {};
       const cursor = serviceCollection.find(query);
@@ -64,15 +75,7 @@ async function run() {
 
 
     // All services for admin
-    app.get('/admin/services', verifyjwt, async(req, res) =>{
-      const email = req.decoded.email;
-      const query = {email:email};
-      const user = await usersCollection.findOne(query);
-
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'Forbidden access'});
-      }
-
+    app.get('/admin/services', verifyjwt, verifyAdmin, async(req, res) =>{
       const query2 = {};
       const cursor = serviceCollection.find(query2);
       const services = await cursor.toArray();
@@ -81,14 +84,14 @@ async function run() {
 
 
     //Delete a service admin
-    app.delete('/admin/service/:id', verifyjwt, async(req, res) =>{
-      const email = req.decoded.email;
-      const query = {email:email};
-      const user = await usersCollection.findOne(query);
+    app.delete('/admin/service/:id', verifyjwt, verifyAdmin, async(req, res) =>{
+      // const email = req.decoded.email;
+      // const query = {email:email};
+      // const user = await usersCollection.findOne(query);
 
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'Forbidden access'});
-      }
+      // if(user.role !== 'admin'){
+      //   return res.status(403).send({message: 'Forbidden access'});
+      // }
 
       const id= req.params.id;
       const query2 = {_id:ObjectId(id)};
@@ -103,15 +106,15 @@ async function run() {
       res.send(service);
     });
 
-    app.post('/services', verifyjwt, async(req, res) =>{
+    app.post('/services', verifyjwt, verifyAdmin, async(req, res) =>{
 
-      const email = req.decoded.email;
-      const query = {email:email};
-      const user = await usersCollection.findOne(query);
+      // const email = req.decoded.email;
+      // const query = {email:email};
+      // const user = await usersCollection.findOne(query);
 
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'Forbidden access'});
-      }
+      // if(user.role !== 'admin'){
+      //   return res.status(403).send({message: 'Forbidden access'});
+      // }
 
       const service = req.body;
       const result = await serviceCollection.insertOne(service);
@@ -136,30 +139,29 @@ async function run() {
     })
 
     //Get all users api
-    app.get('/users', verifyjwt, async(req, res)=> {
+    app.get('/users', verifyjwt, verifyAdmin, async(req, res)=> {
 
-      const decodedEmail = req.decoded.email;
-      const user = await usersCollection.findOne({email : decodedEmail});
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'Forbiddeb access'});
-      }else{
-        const query = {};
-        const cursor = usersCollection.find(query);
-        const users = await cursor.toArray();
-        res.send(users);
-      }
+      // const decodedEmail = req.decoded.email;
+      // const user = await usersCollection.findOne({email : decodedEmail});
+      // if(user.role !== 'admin'){
+      //   return res.status(403).send({message: 'Forbiddeb access'});
+      // }
+      const query = {};
+      const cursor = usersCollection.find(query);
+      const users = await cursor.toArray();
+      res.send(users);
 
       
     })
 
-    app.delete('/users/admin/:id', verifyjwt, async(req, res) => {
-      const decodedEmail = req.decoded.email;
-      const que = {email: decodedEmail};
-      const user = await usersCollection.findOne(que);
+    app.delete('/users/admin/:id', verifyjwt, verifyAdmin, async(req, res) => {
+      // const decodedEmail = req.decoded.email;
+      // const que = {email: decodedEmail};
+      // const user = await usersCollection.findOne(que);
 
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'forbidden access'});
-      }
+      // if(user.role !== 'admin'){
+      //   return res.status(403).send({message: 'forbidden access'});
+      // }
 
       const id = req.params.id;
       const query = {_id:ObjectId(id)};
@@ -193,7 +195,6 @@ async function run() {
     app.get('/orders', verifyjwt,  async(req, res) =>{
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
-      console.log( decodedEmail);
 
       if(email !== decodedEmail){
         return res.status(403).send({message: 'forbidden access'});
@@ -213,15 +214,15 @@ async function run() {
 
 
     //Get all orders for admin 
-    app.get('/admin/orders', verifyjwt, async(req, res)=>{
+    app.get('/admin/orders', verifyjwt, verifyAdmin, async(req, res)=>{
 
-      const decodedEmail = req.decoded.email;
-      const query = {email: decodedEmail};
-      const user = await usersCollection.findOne(query);
+      // const decodedEmail = req.decoded.email;
+      // const query = {email: decodedEmail};
+      // const user = await usersCollection.findOne(query);
 
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'forbidden access'});
-      }
+      // if(user.role !== 'admin'){
+      //   return res.status(403).send({message: 'forbidden access'});
+      // }
 
       const query1 ={};
       const result = await ordersCollection.find(query1).toArray();
@@ -231,19 +232,20 @@ async function run() {
     })
 
     // Delete a perticular order by id
-    app.delete('/admin/order/:id', verifyjwt, async(req, res) =>{
-      const decodedEmail = req.decoded.email;
-      const query = {email: decodedEmail};
-      const user = await usersCollection.findOne(query);
+    app.delete('/admin/order/:id', verifyjwt, verifyAdmin, async(req, res) =>{
+      // const decodedEmail = req.decoded.email;
+      // const query = {email: decodedEmail};
+      // const user = await usersCollection.findOne(query);
 
-      if(user.role !== 'admin'){
-        return res.status(403).send({message: 'forbidden access'});
-      }else{
-        const id = req.params.id;
-        const query1 = {_id:ObjectId(id)};
-        const delItem = await ordersCollection.deleteOne(query1);
-        res.send(delItem);
-      }
+      // if(user.role !== 'admin'){
+      //   return res.status(403).send({message: 'forbidden access'});
+      // }
+
+      const id = req.params.id;
+      const query1 = {_id:ObjectId(id)};
+      const delItem = await ordersCollection.deleteOne(query1);
+      res.send(delItem);
+      
       
     })
 
@@ -257,15 +259,15 @@ async function run() {
     })
 
     //make admin api
-    app.put('/users/admin/:id', verifyjwt, async(req, res) => {
+    app.put('/users/admin/:id', verifyjwt, verifyAdmin, async(req, res) => {
 
-      const decodeEmail = req.decoded.email;
-      const query = {email: decodeEmail};
-      const user = await usersCollection.findOne(query);
+      // const decodeEmail = req.decoded.email;
+      // const query = {email: decodeEmail};
+      // const user = await usersCollection.findOne(query);
 
-      if(user?.role !== 'admin'){
-        return res.status(403).send({message : 'Forbidden access'});
-      }
+      // if(user?.role !== 'admin'){
+      //   return res.status(403).send({message : 'Forbidden access'});
+      // }
 
       const id = req.params.id;
       const filter = {_id:ObjectId(id)};
@@ -280,14 +282,15 @@ async function run() {
     })
 
     //Delete single user api
-    app.delete('/users/admin/:id', verifyjwt, async(req, res) => {
-      const decodeEmail = req.decoded.email;
-      const query = {email: decodeEmail};
-      const user = await usersCollection.findOne(query);
+    app.delete('/users/admin/:id', verifyjwt, verifyAdmin, async(req, res) => {
+      // const decodeEmail = req.decoded.email;
+      // const query = {email: decodeEmail};
+      // const user = await usersCollection.findOne(query);
 
-      if(user?.role !== 'admin'){
-        return res.status(403).send({message : 'Forbidden access'});
-      }
+      // if(user?.role !== 'admin'){
+      //   return res.status(403).send({message : 'Forbidden access'});
+      // }
+
       const id = req.params.id;
       const query2 = {_id:ObjectId(id)};
       const result = await usersCollection.deleteOne(query2);
