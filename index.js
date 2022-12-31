@@ -8,6 +8,7 @@ const { application } = require('express');
 const port = process.env.PORT || 5000;
 const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
+const stripe = require("stripe")('sk_test_51H4St6KHspfP33ih3tLIioEMYiS4pbvuUdPhho9INjNzvCnYfL0bPDJpnT0oy8tbgA3bSudWx7yjlK3dIkD5jY4Q00GLkC0DiR');
 
 
 
@@ -54,6 +55,7 @@ async function run() {
     const ordersCollection = client.db("carService").collection("orders");
     const productsCollection = client.db("carService").collection("products");
     const usersCollection = client.db("carService").collection("users");
+    const paymentsCollection = client.db("carService").collection("payments");
 
     const  verifyAdmin = async(req, res, next) =>{
       const decodedEmail = req.decoded.email;
@@ -296,6 +298,55 @@ async function run() {
       const result = await usersCollection.deleteOne(query2);
       res.send(result);
 
+    })
+
+    //payment api
+    app.get('/orders/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id:ObjectId(id)};
+      const result = await ordersCollection.findOne(query);
+      res.send(result);
+    })
+
+
+    app.post("/create-payment-intent", async (req, res) => {
+
+      const {price} = req.body;
+      const amount = price * 100;
+  
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "INR",
+        amount: amount,
+        description: 'Software development services',
+        "payment_method_types": [
+          "card"
+        ]
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+
+    // Insert payments details to mongodb database
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+
+      // for update the orders collection
+      const id = payment.orderId;
+      const filter = {_id:ObjectId(id)};
+      const updatedDoc = {
+        $set:{
+          paid:true,
+          transactionId:payment.transactionId
+        }
+      }
+      const updatedResult = await ordersCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     })
 
     //api for mail
