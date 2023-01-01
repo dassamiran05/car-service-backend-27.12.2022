@@ -39,7 +39,7 @@ function verifyjwt(req, res, next){
   const token = authHeader.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN, function(err, decoded){
     if(err){
-      return res.status(403).send('Forbidden access');
+      return res.status(403).send('Forbidden access and token expired');
     }
     req.decoded = decoded;
 
@@ -87,13 +87,6 @@ async function run() {
 
     //Delete a service admin
     app.delete('/admin/service/:id', verifyjwt, verifyAdmin, async(req, res) =>{
-      // const email = req.decoded.email;
-      // const query = {email:email};
-      // const user = await usersCollection.findOne(query);
-
-      // if(user.role !== 'admin'){
-      //   return res.status(403).send({message: 'Forbidden access'});
-      // }
 
       const id= req.params.id;
       const query2 = {_id:ObjectId(id)};
@@ -110,13 +103,6 @@ async function run() {
 
     app.post('/services', verifyjwt, verifyAdmin, async(req, res) =>{
 
-      // const email = req.decoded.email;
-      // const query = {email:email};
-      // const user = await usersCollection.findOne(query);
-
-      // if(user.role !== 'admin'){
-      //   return res.status(403).send({message: 'Forbidden access'});
-      // }
 
       const service = req.body;
       const result = await serviceCollection.insertOne(service);
@@ -142,12 +128,6 @@ async function run() {
 
     //Get all users api
     app.get('/users', verifyjwt, verifyAdmin, async(req, res)=> {
-
-      // const decodedEmail = req.decoded.email;
-      // const user = await usersCollection.findOne({email : decodedEmail});
-      // if(user.role !== 'admin'){
-      //   return res.status(403).send({message: 'Forbiddeb access'});
-      // }
       const query = {};
       const cursor = usersCollection.find(query);
       const users = await cursor.toArray();
@@ -157,13 +137,6 @@ async function run() {
     })
 
     app.delete('/users/admin/:id', verifyjwt, verifyAdmin, async(req, res) => {
-      // const decodedEmail = req.decoded.email;
-      // const que = {email: decodedEmail};
-      // const user = await usersCollection.findOne(que);
-
-      // if(user.role !== 'admin'){
-      //   return res.status(403).send({message: 'forbidden access'});
-      // }
 
       const id = req.params.id;
       const query = {_id:ObjectId(id)};
@@ -235,13 +208,6 @@ async function run() {
 
     // Delete a perticular order by id
     app.delete('/admin/order/:id', verifyjwt, verifyAdmin, async(req, res) =>{
-      // const decodedEmail = req.decoded.email;
-      // const query = {email: decodedEmail};
-      // const user = await usersCollection.findOne(query);
-
-      // if(user.role !== 'admin'){
-      //   return res.status(403).send({message: 'forbidden access'});
-      // }
 
       const id = req.params.id;
       const query1 = {_id:ObjectId(id)};
@@ -262,15 +228,6 @@ async function run() {
 
     //make admin api
     app.put('/users/admin/:id', verifyjwt, verifyAdmin, async(req, res) => {
-
-      // const decodeEmail = req.decoded.email;
-      // const query = {email: decodeEmail};
-      // const user = await usersCollection.findOne(query);
-
-      // if(user?.role !== 'admin'){
-      //   return res.status(403).send({message : 'Forbidden access'});
-      // }
-
       const id = req.params.id;
       const filter = {_id:ObjectId(id)};
       const options = {upsert : true};
@@ -285,14 +242,6 @@ async function run() {
 
     //Delete single user api
     app.delete('/users/admin/:id', verifyjwt, verifyAdmin, async(req, res) => {
-      // const decodeEmail = req.decoded.email;
-      // const query = {email: decodeEmail};
-      // const user = await usersCollection.findOne(query);
-
-      // if(user?.role !== 'admin'){
-      //   return res.status(403).send({message : 'Forbidden access'});
-      // }
-
       const id = req.params.id;
       const query2 = {_id:ObjectId(id)};
       const result = await usersCollection.deleteOne(query2);
@@ -351,10 +300,11 @@ async function run() {
 
     //api for mail
     app.post("/send_mail", async(req, res) => {
-      let mail = req.body;
+      const mail = req.body;
       const {email, name, subject, phone, description} = mail;
-      console.log(email);
-      let transport = nodemailer.createTransport({
+
+      try{
+        const transport = nodemailer.createTransport({
         host:'smtp.gmail.com',
         port:587,
         secure:false,
@@ -362,17 +312,30 @@ async function run() {
           user : process.env.GMAIL_USER,
           pass : process.env.GMAIL_PASS
         }
-      })
+      });
 
-      await transport.sendMail({
-        from: email,
-        to: 'dassamiran05@gmail.com',
-        subject: subject,
-        text:`<h1>${subject}</h1>`,
-        html:`<div><p>${description}</p></div>`,
-      })
+      const mailOptions = {
+          from: process.env.GMAIL_USER,
+          to: email,
+          subject: subject,
+          text:`<h1>${subject}</h1>`,
+          html:'<h1>Congratulation you have successfully reached us</h1>',
+        };
 
-      console.log("Message sent");
+      transport.sendMail(mailOptions, (error, info) =>{
+        if(error){
+          console.log("Error",error);
+        }
+        else{
+          console.log("Email sent", info);
+          res.status(201).send({status:201, info});
+        }
+      })
+      }
+      catch(error){
+        res.status(201).send({status:401, error});
+      }
+
     })
   } finally {
     //   await client.close();
