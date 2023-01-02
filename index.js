@@ -37,9 +37,11 @@ function verifyjwt(req, res, next){
     return res.status(401).send('Unauthorise access');
   }
   const token = authHeader.split(' ')[1];
+  // const userDetail = jwt.verify(authHeader, process.env.ACCESS_TOKEN);
+  // console.log(jwt.verify(authHeader, process.env.ACCESS_TOKEN));
   jwt.verify(token, process.env.ACCESS_TOKEN, function(err, decoded){
     if(err){
-      return res.status(403).send('Forbidden access and token expired');
+      return res.status(403).send('Forbidden access');
     }
     req.decoded = decoded;
 
@@ -163,6 +165,26 @@ async function run() {
       const token = jwt.sign({email}, process.env.ACCESS_TOKEN, {expiresIn:'1h'});
       return res.send({accessToken: token});
       
+    })
+
+    //Refresh token api
+    app.get('/check-token-expiration', async(req, res) => {
+
+      const authHeader = req.headers.authorization;
+      if(!authHeader){
+        return res.status(401).send('Unauthorise access');
+      }
+      const token = authHeader.split(' ')[1];
+
+      const payload = atob(token.split(".")[1]);
+      const payloadData = JSON.parse(payload);
+      
+      const expiration = new Date(payloadData.exp);
+      const now = new Date();
+
+      if(expiration.getTime() - now.getTime() < 3.6e+6){
+        return res.status(403).send({message: 'Token expired'});
+      }    
     })
 
 
