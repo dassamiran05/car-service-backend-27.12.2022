@@ -37,8 +37,6 @@ function verifyjwt(req, res, next){
     return res.status(401).send('Unauthorise access');
   }
   const token = authHeader.split(' ')[1];
-  // const userDetail = jwt.verify(authHeader, process.env.ACCESS_TOKEN);
-  // console.log(jwt.verify(authHeader, process.env.ACCESS_TOKEN));
   jwt.verify(token, process.env.ACCESS_TOKEN, function(err, decoded){
     if(err){
       return res.status(403).send('Forbidden access');
@@ -118,9 +116,6 @@ async function run() {
       res.send(result);
     })
 
-
-    
-
     //Post users data to database
     app.post('/users', async(req, res) => {
       const user= req.body;
@@ -167,25 +162,38 @@ async function run() {
       
     })
 
-    //Refresh token api
-    app.get('/check-token-expiration', async(req, res) => {
+    //Check token expire api
+    // app.get('/check-token-expiration', async(req, res) => {
 
-      const authHeader = req.headers.authorization;
-      if(!authHeader){
-        return res.status(401).send('Unauthorise access');
-      }
-      const token = authHeader.split(' ')[1];
+    //   const authHeader = req.headers.authorization;
+    //   if(!authHeader){
+    //     return res.status(401).send('Unauthorise access');
+    //   }
+    //   const token = authHeader.split(' ')[1];
 
-      const payload = atob(token.split(".")[1]);
-      const payloadData = JSON.parse(payload);
+    //   // jwt.verify(token, process.env.ACCESS_TOKEN, function(err, decoded){
+    //   //   if(err){
+    //   //     return res.status(403).send('Forbidden access');
+    //   //   }
+    //   //   req.decoded = decoded;
+    //   // })  
+
+    //   // const decodeEmail = req.decoded.email;
+    //   // const query = {email: decodeEmail};
+    //   // const user = usersCollection.findOne(query);
+
       
-      const expiration = new Date(payloadData.exp);
-      const now = new Date();
 
-      if(expiration.getTime() - now.getTime() < 3.6e+6){
-        return res.status(403).send({message: 'Token expired'});
-      }    
-    })
+    //   const payload = atob(token.split(".")[1]);
+    //   const payloadData = JSON.parse(payload);
+      
+    //   const expiration = new Date(payloadData.exp);
+    //   const now = new Date();
+
+    //   if(expiration.getTime() - now.getTime() < 3.6e+6){
+    //     return res.status(403).send({status:403, message: 'Token expired'});
+    //   }    
+    // })
 
 
     //Get all orders by specific mail
@@ -359,9 +367,10 @@ async function run() {
       }
 
     })
-  } finally {
-    //   await client.close();
-  }
+  } 
+    finally {
+      //   await client.close();
+    }
 }
 run().catch(console.dir);
 
