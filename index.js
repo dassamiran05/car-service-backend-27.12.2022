@@ -156,6 +156,20 @@ async function run() {
 
     })
 
+    // check user api during registration
+    app.get('/checkuser', async(req, res) =>{
+      const email = req.query.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      if(user){
+        return res.send({alreadyExists: true});
+      }
+      else
+      {
+        return res.send({alreadyExists: false});
+      }
+    })
+
     //To check a user is admin or not
     app.get('/users/admin/:email', async(req, res) =>{
       const email = req.params.email;
